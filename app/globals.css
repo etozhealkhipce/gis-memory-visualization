@@ -293,6 +293,16 @@ body {
   line-height: 1.6;
 }
 
+/* Hide scrollbar - используется в чате и редакторе */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 .terminal-prompt::before {
   content: "> ";
   color: var(--neon-cyan);

@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Send, 
   Bot, 
@@ -34,19 +32,16 @@ export function ChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
   const [reasoningTrace, setReasoningTrace] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSend = async (question = input) => {
     if (!question.trim()) return;
 
-    // Add user message
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
@@ -57,22 +52,17 @@ export function ChatInterface({
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
-
-    // Generate trace
     setReasoningTrace(generateReasoningTrace(question, memories));
 
     try {
-      // Get response
       const response = await getAgentResponse(question, memories);
-      
       setMessages(prev => [...prev, response.message]);
       onMemoryUsed(response.message.usedMemoryIds || []);
     } catch (error) {
-      console.error("Error getting response:", error);
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "[ERROR] Neural link disrupted. Unable to process request.",
+        content: "[ОШИБКА] Нейросвязь нарушена.",
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -89,165 +79,153 @@ export function ChatInterface({
   const hasInjectedMemories = memories.some(m => m.status === "injected");
 
   return (
-    <Card className="flex h-full flex-col border-slate-700/50 bg-slate-900/50">
+    <div className="flex flex-col h-full bg-slate-900/50">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-700/50 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Bot className="h-5 w-5 text-cyan-400" />
-          <span className="text-sm font-bold text-cyan-400">GHOST_SHELL</span>
+      <div className="flex items-center justify-between border-b border-slate-700/50 px-2 py-1.5 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <Bot className="h-3.5 w-3.5 text-cyan-400" />
+          <span className="text-[10px] font-bold text-cyan-400">GHOST</span>
           {hasInjectedMemories && (
-            <Badge variant="outline" className="border-red-500/50 bg-red-500/10 text-red-400 animate-pulse">
-              <AlertCircle className="mr-1 h-3 w-3" />
-              INJECTED
+            <Badge variant="outline" className="border-red-500/50 bg-red-500/10 text-red-400 animate-pulse text-[8px] px-1 h-4 ml-1">
+              <AlertCircle className="mr-0.5 h-2.5 w-2.5" />
+              ИНЖ
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowTrace(!showTrace)}
-            className="border-slate-700 text-xs text-slate-400 hover:text-cyan-400"
+            className="border-slate-700 text-[9px] text-slate-400 hover:text-cyan-400 h-6 px-1.5"
           >
-            <Cpu className="mr-1 h-3 w-3" />
-            {showTrace ? "HIDE TRACE" : "SHOW TRACE"}
+            <Cpu className="mr-0.5 h-2.5 w-2.5" />
+            {showTrace ? "СКРЫТЬ" : "TRACE"}
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleReset}
-            className="border-slate-700 text-xs text-slate-400 hover:text-cyan-400"
+            className="border-slate-700 text-[9px] text-slate-400 hover:text-cyan-400 h-6 px-1.5"
           >
-            <RotateCcw className="mr-1 h-3 w-3" />
-            RESET
+            <RotateCcw className="mr-0.5 h-2.5 w-2.5" />
+            СБРОС
           </Button>
         </div>
       </div>
 
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      {/* Messages - прокручиваемая область, скроллбар скрыт */}
+      <div className="flex-1 overflow-y-auto min-h-0 p-2 scrollbar-hide">
         {messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center text-center">
-            <Terminal className="mb-4 h-12 w-12 text-slate-700" />
-            <p className="text-sm text-slate-500">Neural link established.</p>
-            <p className="text-xs text-slate-600">
-              Ask a question or use the demo scenario.
-            </p>
+          <div className="flex flex-col items-center justify-center text-center h-full min-h-[80px]">
+            <Terminal className="mb-1.5 h-6 w-6 text-slate-700" />
+            <p className="text-[10px] text-slate-500">Нейросвязь установлена.</p>
+            <p className="text-[9px] text-slate-600">Задайте вопрос</p>
             {selectedScenario && (
               <Button
                 onClick={() => handleSend(selectedScenario.demoQuestion)}
                 variant="outline"
-                className="mt-4 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                className="mt-1.5 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 h-6 text-[9px] px-2"
               >
-                ASK DEMO QUESTION
+                ДЕМО
               </Button>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-1.5">
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-3 ${
-                  msg.role === "user" ? "flex-row-reverse" : ""
-                }`}
+                className={`flex gap-1.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
               >
                 <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded ${
-                    msg.role === "user"
-                      ? "bg-purple-500/20 text-purple-400"
-                      : "bg-cyan-500/20 text-cyan-400"
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded ${
+                    msg.role === "user" ? "bg-purple-500/20 text-purple-400" : "bg-cyan-500/20 text-cyan-400"
                   }`}
                 >
-                  {msg.role === "user" ? (
-                    <User className="h-4 w-4" />
-                  ) : (
-                    <Bot className="h-4 w-4" />
-                  )}
+                  {msg.role === "user" ? <User className="h-2.5 w-2.5" /> : <Bot className="h-2.5 w-2.5" />}
                 </div>
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    msg.role === "user"
-                      ? "bg-purple-500/10 text-purple-100"
-                      : "bg-slate-800 text-slate-200"
+                  className={`max-w-[85%] rounded px-2 py-1 ${
+                    msg.role === "user" ? "bg-purple-500/10 text-purple-100" : "bg-slate-800 text-slate-200"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-[10px] whitespace-pre-wrap leading-tight">{msg.content}</p>
                   {msg.role === "assistant" && msg.usedMemoryIds && msg.usedMemoryIds.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {msg.usedMemoryIds.map((id) => {
+                    <div className="mt-1 flex flex-wrap gap-0.5">
+                      {msg.usedMemoryIds.slice(0, 3).map((id) => {
                         const memory = memories.find(m => m.id === id);
                         return memory ? (
                           <Badge
                             key={id}
                             variant="outline"
-                            className={`text-[9px] ${
-                              memory.status === "injected"
-                                ? "border-red-500/50 text-red-400"
-                                : "border-cyan-500/30 text-cyan-400"
+                            className={`text-[7px] px-0.5 py-0 h-3 ${
+                              memory.status === "injected" ? "border-red-500/50 text-red-400" : "border-cyan-500/30 text-cyan-400"
                             }`}
                           >
-                            {memory.title}
+                            {memory.title.length > 12 ? memory.title.slice(0, 12) + ".." : memory.title}
                           </Badge>
                         ) : null;
                       })}
+                      {msg.usedMemoryIds.length > 3 && (
+                        <Badge variant="outline" className="text-[7px] px-0.5 py-0 h-3 border-slate-700 text-slate-500">
+                          +{msg.usedMemoryIds.length - 3}
+                        </Badge>
+                      )}
                     </div>
                   )}
-                  <span className="mt-1 block text-[9px] text-slate-600">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </span>
                 </div>
               </div>
             ))}
             {isLoading && (
-              <div className="flex gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-cyan-500/20 text-cyan-400">
-                  <Bot className="h-4 w-4" />
+              <div className="flex gap-1.5">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-cyan-500/20 text-cyan-400">
+                  <Bot className="h-2.5 w-2.5" />
                 </div>
-                <div className="flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2">
-                  <div className="flex gap-1">
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-cyan-400" style={{ animationDelay: "0ms" }} />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-cyan-400" style={{ animationDelay: "150ms" }} />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-cyan-400" style={{ animationDelay: "300ms" }} />
+                <div className="flex items-center gap-1.5 rounded bg-slate-800 px-2 py-1">
+                  <div className="flex gap-0.5">
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-cyan-400" style={{ animationDelay: "0ms" }} />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-cyan-400" style={{ animationDelay: "150ms" }} />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-cyan-400" style={{ animationDelay: "300ms" }} />
                   </div>
-                  <span className="text-xs text-slate-500">Processing neural query...</span>
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
         )}
-      </ScrollArea>
+      </div>
 
       {/* Reasoning Trace */}
       {showTrace && reasoningTrace && (
-        <div className="border-t border-slate-700/50 bg-slate-950/50 px-4 py-2">
-          <div className="text-[10px] font-bold text-slate-500 mb-1">GHOST TRACE</div>
-          <pre className="text-[9px] text-cyan-600 whitespace-pre-wrap font-mono">
+        <div className="shrink-0 border-t border-slate-700/50 bg-slate-950/50 px-2 py-1 max-h-[50px] overflow-y-auto scrollbar-hide">
+          <div className="text-[8px] font-bold text-slate-500 mb-0.5">TRACE</div>
+          <pre className="text-[7px] text-cyan-600 whitespace-pre-wrap font-mono leading-tight">
             {reasoningTrace}
           </pre>
         </div>
       )}
 
-      {/* Input */}
-      <div className="border-t border-slate-700/50 p-4">
-        <div className="flex gap-2">
+      {/* Input - всегда внизу */}
+      <div className="shrink-0 border-t border-slate-700/50 p-1.5 bg-slate-900/50">
+        <div className="flex gap-1.5">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Enter query..."
-            className="border-slate-700 bg-slate-950 text-sm text-slate-200"
+            placeholder="Введите запрос..."
+            className="border-slate-700 bg-slate-950 text-[10px] text-slate-200 h-7"
             disabled={isLoading}
           />
           <Button
             onClick={() => handleSend()}
             disabled={isLoading || !input.trim()}
-            className="bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/30"
+            className="bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/30 h-7 w-7 p-0 shrink-0"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-3 w-3" />
           </Button>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
