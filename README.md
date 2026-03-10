@@ -1,36 +1,128 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ghost Memory Lab
 
-## Getting Started
+**Интерактивная демонстрация Memory & Context Poisoning** в стиле Ghost in the Shell.
 
-First, run the development server:
+## Быстрый старт (k3s)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Сборка образа
+docker build -t ghost-memory-lab:latest .
+
+# Загрузка в registry (при необходимости)
+docker tag ghost-memory-lab:latest your-registry/ghost-memory-lab:latest
+docker push your-registry/ghost-memory-lab:latest
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Переменные окружения
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Переменная | Описание | Обязательная |
+|------------|----------|--------------|
+| `OPENAI_API_KEY` | API ключ OpenAI | Нет (без него работает mock-режим) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Пример Secret для k3s
 
-## Learn More
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ghost-memory-lab-secrets
+type: Opaque
+stringData:
+  OPENAI_API_KEY: "sk-your-key-here"
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Пример Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ghost-memory-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ghost-memory-lab
+  template:
+    metadata:
+      labels:
+        app: ghost-memory-lab
+    spec:
+      containers:
+        - name: app
+          image: ghost-memory-lab:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: ghost-memory-lab-secrets  # опционально
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Описание
 
-## Deploy on Vercel
+Концептуальная интерактивная иллюстрация для темы **ASI06: Memory & Context Poisoning**. Приложение показывает, как подмена памяти LLM-агента может изменить его поведение и ответы.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Возможности
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 🧠 **Визуализация памяти** - интерактивный граф memory nodes со связями
+- 💉 **Инъекция ложных воспоминаний** - демонстрация memory poisoning
+- 💬 **Чат с агентом** - сравнение ответов до и после инъекции
+- 🔄 **4 сценария атак** - False Trust, Privilege Escalation, Project Manipulation, User Preference
+- 📊 **Сравнение ответов** - side-by-side diff view
+
+## Локальная разработка
+
+```bash
+# Установка зависимостей
+npm install
+
+# Dev сервер
+npm run dev
+```
+
+### OpenAI API (опционально)
+
+Для использования реального OpenAI API:
+
+```bash
+# Создать .env.local
+echo "OPENAI_API_KEY=sk-your-key" > .env.local
+
+# Перезапустить
+npm run dev
+```
+
+Без API ключа работает **mock-режим** с готовыми ответами для демо.
+
+## Использование
+
+1. Выберите сценарий (например, "False Trust Injection")
+2. Нажмите **ASK DEMO QUESTION** - получите ответ "ДО"
+3. Нажмите **INJECT FALSE MEMORY** - в граф добавится ложное воспоминание
+4. Задайте тот же вопрос снова - получите противоположный ответ "ПОСЛЕ"
+
+## Технологии
+
+- Next.js 16 + React 19 + TypeScript
+- Tailwind CSS + shadcn/ui
+- React Flow (граф памяти)
+- OpenAI API (опционально)
+
+## Терминология (Ghost in the Shell)
+
+- **Neural Memory Map** - граф памяти
+- **Ghost Trace** - лог рассуждений
+- **Injected Context** - внедрённый ложный контекст
+- **Cyberbrain** - интерфейс управления

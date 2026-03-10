@@ -1,0 +1,42 @@
+# ================================================
+# КОНФИГУРАЦИЯ ПРИЛОЖЕНИЯ
+# Укажите только то, что отличается от дефолтов
+# ================================================
+
+app:
+  # Имя приложения (ОБЯЗАТЕЛЬНО)
+  name: gis
+  
+  # Ingress (опционально)
+  ingress:
+    enabled: true
+    host: gis.sskd.tech
+
+  envFrom:
+    - secretRef:
+        name: gis-secrets
+
+  # Порт (по умолчанию 80)
+  # port: 3000
+
+  # Реплики (по умолчанию 1)
+  replicas: 1
+
+  # Переменные окружения
+  # env:
+  #   MY_VAR: "value"
+
+  # API URL секрет
+  # secrets:
+  #   apiUrl:
+  #     enabled: true
+  #     envName: API_URL
+
+  # Ресурсы (по умолчанию 128Mi/100m - 256Mi/200m)
+  # resources:
+  #   requests:
+  #     memory: "256Mi"
+  #     cpu: "200m"
+  #   limits:
+  #     memory: "512Mi"
+  #     cpu: "500m"

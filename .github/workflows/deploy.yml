@@ -1,0 +1,17 @@
+# ================================================
+# СКОПИРУЙТЕ И ИЗМЕНИТЕ 2 СТРОКИ!
+# ================================================
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    uses: etozhealkhipce/senior-script-kiddie-k3s/.github/workflows/deploy-app.yml@main
+    with:
+      app_name: gis           # <-- ИЗМЕНИТЕ
+      app_host: gis.sskd.tech # <-- ИЗМЕНИТЕ (удалите если не нужен ingress)
+      app_secrets: "OPENAI_API_KEY"
+    secrets: inherit
